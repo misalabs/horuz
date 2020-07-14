@@ -1,0 +1,4 @@
+*.pyc
+sqlite3.db
+.venv
+horuz.egg-info
