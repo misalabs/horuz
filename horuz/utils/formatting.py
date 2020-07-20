@@ -29,7 +29,8 @@ def beautify_query(query, fields=[], output="oj"):
                             except KeyError:
                                 if output == "json":
                                     try:
-                                        d["result"] = {}
+                                        if "result" not in d:
+                                            d["result"] = {}
                                         d["result"][field] = source['result'][field]
                                         if field == "html":
                                             d["result"]["html"] = codecs.decode(
