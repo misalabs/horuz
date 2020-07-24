@@ -222,6 +222,7 @@ class HoruzES:
         else:
             self.ctx.vlog(es_data)
             self.es.save_in_index(self.domain, es_data)
+        self.ctx.log("\nProject name: {}".format(self.domain))
         self.ctx.log("\nSession name: {}".format(session))
         self.ctx.log("Results: {}".format(len_results))
         return
@@ -231,12 +232,14 @@ class HoruzES:
         Save General JSON data
         """
         session = session if session else get_random_name()
-        for d in data:
-            d.update({
-                "time": datetime.datetime.now(),
-                "session": session})
-            self.ctx.vlog(d)
-            self.es.save_in_index(self.domain, d)
+        with click.progressbar(data, label='Collecting data for session: {}'.format(session)) as results:
+            for d in results:
+                d.update({
+                    "time": datetime.datetime.now(),
+                    "session": session})
+                self.ctx.vlog(d)
+                self.es.save_in_index(self.domain, d)
+        self.ctx.log("\nProject name: {}".format(self.domain))
         self.ctx.log("\nSession name: {}".format(session))
         self.ctx.log("Results: {}".format(len(data)))
 

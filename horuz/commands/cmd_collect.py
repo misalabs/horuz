@@ -50,8 +50,6 @@ def cli(ctx, verbose, project, session, cmd, filename):
             # Deleting remainign files
             os.popen("rm -rf {}".format(tmp_path))
     if filename:
-        with yaspin(text="Collecting...", color="magenta") as sp:
-            hes = HoruzES(project, ctx)
-            ctx.vlog("Uploading file info to ElasticSeach.")
-            hes.save_json(files=[filename.name], session=session)
-            sp.ok()
+        hes = HoruzES(project, ctx)
+        ctx.vlog("Uploading file info to ElasticSeach.")
+        hes.save_json(files=[filename.name], session=session)
