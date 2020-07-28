@@ -121,7 +121,7 @@ class ElasticSearchAPI:
         except Exception as e:
             self.ctx.vlog("Mapping error {}".format(e))
 
-    def query(self, index, term, size=100, raw=False):
+    def query(self, index, term, size=100, raw=False, fields=[]):
         """
         Search in Elasticsearch server
         Parameters
@@ -132,6 +132,8 @@ class ElasticSearchAPI:
             Search Query
         size : String
             Size query search
+        fields : List
+            A list of fields of the source
         """
         self.create_index(index)
         if raw is False:
@@ -142,7 +144,8 @@ class ElasticSearchAPI:
                         index=index,
                         q=term,
                         sort=["time:desc"],
-                        size=size)
+                        size=size,
+                        _source=fields)
                 except RequestError as e:
                     self.ctx.vlog("Query Error {}".format(e))
         else:
@@ -184,8 +187,8 @@ class HoruzES:
         config_url = data["config"]["url"].replace("FUZZ", "")
         # If data is saved, we do not save it again
         record_exists = self.es.query(
-            self.domain,
-            '''
+            index=self.domain,
+            term='''
                 host: "*{}" AND time: {} AND type: ffuf
             '''.format(
                 config_url.replace("/", '').replace("http:", ''),
@@ -261,14 +264,14 @@ class HoruzES:
                     self.save_general_data(data, session)
         return
 
-    def query(self, term, size=100, raw=False):
+    def query(self, term, size=100, raw=False, fields=[]):
         """
         Send Queries to ES
         """
         q = None
         self.ctx.vlog("Sending the query '{}' to ElasticSeach.".format(term))
         try:
-            q = self.es.query(self.domain, term, size, raw)
+            q = self.es.query(self.domain, term, size, raw, fields)
         except Exception as e:
             self.ctx.log("Query connection failed: {}!".format(e))
             self.ctx.vlog("{}!".format(e))
