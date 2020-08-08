@@ -23,12 +23,18 @@ def cli(ctx, verbose, project, query, fields, size, oj):
     fields = fields.split(",") if fields else []
     if oj:
         # JSON Output
-        data = beautify_query(hes.query(query, size), fields, output="json")
+        data = beautify_query(
+            hes.query(term=query, size=size, fields=fields),
+            fields,
+            output="json")
         click.echo(data)
     else:
         # Interactive Output
         # Default fields if nothing were introduced
         if not fields:
             fields = ["_id", "time", "session"]
-        data = beautify_query(hes.query(query, size), fields, output="interactive")
+        data = beautify_query(
+            hes.query(term=query, size=size, fields=fields),
+            fields,
+            output="interactive")
         click.echo_via_pager(tabulate(data, headers="keys"))

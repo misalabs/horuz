@@ -3,6 +3,14 @@ import json
 import traceback
 
 
+def recursive_items(dictionary):
+    for key, value in sorted(dictionary.items()):
+        if type(value) is dict:
+            yield from recursive_items(value)
+        else:
+            yield (key, value)
+
+
 def beautify_query(query, fields=[], output="oj"):
     """
     Prepare the query for the user.
@@ -16,38 +24,10 @@ def beautify_query(query, fields=[], output="oj"):
     try:
         if query and query['hits']:
             for hit in query['hits']['hits']:
-                # raise ValueError(hit)
                 source = hit["_source"]
-                if fields:
-                    d = {}
-                    for field in fields:
-                        try:
-                            d[field] = hit[field]
-                        except KeyError:
-                            try:
-                                d[field] = source[field]
-                            except KeyError:
-                                if output == "json":
-                                    try:
-                                        if "result" not in d:
-                                            d["result"] = {}
-                                        d["result"][field] = source['result'][field]
-                                        if field == "html":
-                                            d["result"]["html"] = codecs.decode(
-                                                d["result"]["html"], "unicode_escape")
-                                    except (KeyError, TypeError):
-                                        pass
-                                elif output == "interactive":
-                                    try:
-                                        d["result.{}".format(field)] = source['result'][field]
-                                        if field == "html":
-                                            d["result.{}".format(field)] = codecs.decode(
-                                                d["result.{}".format(field)]["html"], "unicode_escape")
-                                    except (KeyError, TypeError):
-                                        pass
-                else:
-                    d = {'_id': hit["_id"]}
-                    d.update(source)
+                d = source
+                if "_id" in fields:
+                    d["_id"] = hit["_id"]
                 data.append(d)
     except Exception as e:
         raise ValueError("""
@@ -58,4 +38,12 @@ def beautify_query(query, fields=[], output="oj"):
 
     if output == "json":
         data = json.dumps(data, indent=4, sort_keys=True)
+    elif output == "interactive":
+        new_data = []
+        for d in data:
+            new_d = {}
+            for key, value in recursive_items(d):
+                new_d[key] = codecs.decode(str(value), "unicode_escape")
+            new_data.append(new_d)
+        data = new_data
     return data

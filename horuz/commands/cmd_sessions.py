@@ -22,7 +22,7 @@ def sessions_ls(ctx, verbose, project):
     """
     ctx.verbose = verbose
     hes = HoruzES(project, ctx)
-    data = hes.query("""
+    data = hes.query(term="""
         {
             "size": 0,
             "aggs" : {
