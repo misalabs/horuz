@@ -3,7 +3,7 @@ import json
 
 import click
 from elasticsearch import Elasticsearch, RequestsHttpConnection
-from elasticsearch.exceptions import RequestError
+from elasticsearch.exceptions import RequestError, ConnectionError, ConnectionTimeout
 
 from horuz.utils.generators import get_random_name
 
@@ -26,8 +26,10 @@ class ElasticSearchAPI:
         try:
             self.es = Elasticsearch(
                 address, connection_class=RequestsHttpConnection)
+        except (ConnectionError, ConnectionTimeout):
+            self.ctx.log("Create index connection error") 
         except Exception as e:
-            print(e)
+            self.ctx.log("Create index connection error".format(e))
             self.es = None
         self.ctx = ctx
 
@@ -48,8 +50,10 @@ class ElasticSearchAPI:
             if not self.es.indices.exists(name):
                 self.es.indices.create(index=name, ignore=400)
             created = True
+        except (ConnectionError, ConnectionTimeout):
+            self.ctx.log("Create index connection error")
         except Exception as e:
-            print(e)
+            self.ctx.log("Create index connection error".format(e))      
         finally:
             return created
 
@@ -94,8 +98,10 @@ class ElasticSearchAPI:
         try:
             self.es.index(index=index, body=record)
             saved = True
+        except (ConnectionError, ConnectionTimeout):
+            self.ctx.log("Save index connection error")  
         except Exception as e:
-            print(e)
+            self.ctx.log("save index connection error".format(e))
         finally:
             return saved
 
@@ -146,14 +152,14 @@ class ElasticSearchAPI:
                         sort=["time:desc"],
                         size=size,
                         _source=fields)
-                except RequestError as e:
+                except (RequestError, ConnectionError, ConnectionTimeout) as e:
                     self.ctx.vlog("Query Error {}".format(e))
         else:
             search_args = {"index": index, "body": term}
             self.ctx.vlog("ElasticSeach Query Raw: {}".format(search_args))
             try:
                 return self.es.search(**search_args)
-            except RequestError as e:
+            except (RequestError, ConnectionError, ConnectionTimeout) as e:
                 self.ctx.vlog("Query Error {}".format(e))
 
     def connected(self):
