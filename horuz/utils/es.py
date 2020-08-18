@@ -27,9 +27,9 @@ class ElasticSearchAPI:
             self.es = Elasticsearch(
                 address, connection_class=RequestsHttpConnection)
         except (ConnectionError, ConnectionTimeout):
-            self.ctx.log("Create index connection error") 
+            self.ctx.log("Error init connection ES") 
         except Exception as e:
-            self.ctx.log("Create index connection error".format(e))
+            self.ctx.log("Error init ES {}".format(e))
             self.es = None
         self.ctx = ctx
 
@@ -53,7 +53,7 @@ class ElasticSearchAPI:
         except (ConnectionError, ConnectionTimeout):
             self.ctx.log("Create index connection error")
         except Exception as e:
-            self.ctx.log("Create index connection error".format(e))      
+            self.ctx.log("Create index error {}".format(e))      
         finally:
             return created
 
@@ -74,7 +74,7 @@ class ElasticSearchAPI:
             self.es.indices.delete(index=index, ignore=[400, 404])
             deleted = True
         except Exception as e:
-            print(e)
+            self.ctx.log("Delete index error {}".format(e))
         finally:
             return deleted
 
@@ -101,7 +101,7 @@ class ElasticSearchAPI:
         except (ConnectionError, ConnectionTimeout):
             self.ctx.log("Save index connection error")  
         except Exception as e:
-            self.ctx.log("save index connection error".format(e))
+            self.ctx.log("Save index error {}".format(e))
         finally:
             return saved
 
@@ -198,7 +198,7 @@ class HoruzES:
                 host: "*{}" AND time: {} AND type: ffuf
             '''.format(
                 config_url.replace("/", '').replace("http:", ''),
-                data["time"]))
+               data["time"]))
         if record_exists and record_exists['hits']['hits']:
             self.ctx.vlog("Record {} {} exists: ", config_url, data["time"], record_exists)
             return
@@ -228,6 +228,7 @@ class HoruzES:
                     self.ctx.vlog(es_data)
                     # Saving to ES
                     self.es.save_in_index(self.domain, es_data)
+
         else:
             self.ctx.vlog(es_data)
             self.es.save_in_index(self.domain, es_data)
@@ -281,6 +282,7 @@ class HoruzES:
         except Exception as e:
             self.ctx.log("Query connection failed: {}!".format(e))
             self.ctx.vlog("{}!".format(e))
+
         return q
 
     def delete(self):
@@ -320,7 +322,7 @@ class HoruzES:
                     else:
                         mapping.append(p)
         except Exception as e:
-            self.ctx.log("Mapping connection failed! {}". format(e))
+            self.ctx.log("Mapping connection failed! {}".format(e))
         return mapping
 
     def is_connected(self):
