@@ -178,8 +178,6 @@ class HoruzES:
         self.es = ElasticSearchAPI(ctx.config.get("elasticsearch_address"), ctx)
         self.domain = domain
         self.ctx = ctx
-        if self.es.connected() is False:
-            raise ValueError("ElasticSearch connection error")
             
     def save_ffuf_data(self, data, session):
         """
@@ -259,6 +257,10 @@ class HoruzES:
         """
         Save JSON Data to ES.
         """
+        if self.es.connected() is False:
+            self.ctx.log("ElasticSearch connection error")
+            return
+
         for filepath in files:
             with open(filepath, "r") as fp:
                 data = {}
