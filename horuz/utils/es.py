@@ -175,17 +175,12 @@ class HoruzES:
     Horuz ElasticSearch connection
     """
     def __init__(self, domain, ctx=None):
-        try:
-            self.es = ElasticSearchAPI(ctx.config.get("elasticsearch_address"), ctx)
-            self.domain = domain
-            self.ctx = ctx 
-            raise ValueError(self.es.connected())
-        except ValueError as e:
-            if self.es.connected() == True:
-                print("")
-            else:
-                print(" ElasticSearch connection error")
-
+        self.es = ElasticSearchAPI(ctx.config.get("elasticsearch_address"), ctx)
+        self.domain = domain
+        self.ctx = ctx
+        if self.es.connected() is False:
+            raise ValueError("ElasticSearch connection error")
+            
     def save_ffuf_data(self, data, session):
         """
         Save ffuf data to ES
@@ -219,7 +214,7 @@ class HoruzES:
             "result": []
         }
         # Save the new data
-        len_results =len(data.get("results"))
+        len_results = len(data.get("results"))
         if data.get("results"):
             with click.progressbar(data["results"], label='Collecting data for session: {}'.format(session)) as results:
                 for result in results:
