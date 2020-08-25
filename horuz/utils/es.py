@@ -3,7 +3,7 @@ import json
 
 import click
 from elasticsearch import Elasticsearch, RequestsHttpConnection
-from elasticsearch.exceptions import RequestError
+from elasticsearch.exceptions import RequestError, ConnectionError, ConnectionTimeout
 
 from horuz.utils.generators import get_random_name
 
@@ -26,8 +26,10 @@ class ElasticSearchAPI:
         try:
             self.es = Elasticsearch(
                 address, connection_class=RequestsHttpConnection)
+        except (ConnectionError, ConnectionTimeout):
+            self.ctx.log("Error init connection ES") 
         except Exception as e:
-            print(e)
+            self.ctx.log("Error init ES {}".format(e))
             self.es = None
         self.ctx = ctx
 
@@ -48,8 +50,10 @@ class ElasticSearchAPI:
             if not self.es.indices.exists(name):
                 self.es.indices.create(index=name, ignore=400)
             created = True
+        except (ConnectionError, ConnectionTimeout):
+            self.ctx.log("Create index connection error")
         except Exception as e:
-            print(e)
+            self.ctx.log("Create index error {}".format(e))      
         finally:
             return created
 
@@ -70,7 +74,7 @@ class ElasticSearchAPI:
             self.es.indices.delete(index=index, ignore=[400, 404])
             deleted = True
         except Exception as e:
-            print(e)
+            self.ctx.log("Delete index error {}".format(e))
         finally:
             return deleted
 
@@ -94,8 +98,10 @@ class ElasticSearchAPI:
         try:
             self.es.index(index=index, body=record)
             saved = True
+        except (ConnectionError, ConnectionTimeout):
+            self.ctx.log("Save index connection error")  
         except Exception as e:
-            print(e)
+            self.ctx.log("Save index error {}".format(e))
         finally:
             return saved
 
@@ -146,14 +152,14 @@ class ElasticSearchAPI:
                         sort=["time:desc"],
                         size=size,
                         _source=fields)
-                except RequestError as e:
+                except (RequestError, ConnectionError, ConnectionTimeout) as e:
                     self.ctx.vlog("Query Error {}".format(e))
         else:
             search_args = {"index": index, "body": term}
             self.ctx.vlog("ElasticSeach Query Raw: {}".format(search_args))
             try:
                 return self.es.search(**search_args)
-            except RequestError as e:
+            except (RequestError, ConnectionError, ConnectionTimeout) as e:
                 self.ctx.vlog("Query Error {}".format(e))
 
     def connected(self):
@@ -172,7 +178,7 @@ class HoruzES:
         self.es = ElasticSearchAPI(ctx.config.get("elasticsearch_address"), ctx)
         self.domain = domain
         self.ctx = ctx
-
+            
     def save_ffuf_data(self, data, session):
         """
         Save ffuf data to ES
@@ -192,7 +198,7 @@ class HoruzES:
                 host: "*{}" AND time: {} AND type: ffuf
             '''.format(
                 config_url.replace("/", '').replace("http:", ''),
-                data["time"]))
+               data["time"]))
         if record_exists and record_exists['hits']['hits']:
             self.ctx.vlog("Record {} {} exists: ", config_url, data["time"], record_exists)
             return
@@ -222,6 +228,7 @@ class HoruzES:
                     self.ctx.vlog(es_data)
                     # Saving to ES
                     self.es.save_in_index(self.domain, es_data)
+
         else:
             self.ctx.vlog(es_data)
             self.es.save_in_index(self.domain, es_data)
@@ -250,6 +257,10 @@ class HoruzES:
         """
         Save JSON Data to ES.
         """
+        if self.es.connected() is False:
+            self.ctx.log("ElasticSearch connection error")
+            return
+
         for filepath in files:
             with open(filepath, "r") as fp:
                 data = {}
@@ -275,6 +286,7 @@ class HoruzES:
         except Exception as e:
             self.ctx.log("Query connection failed: {}!".format(e))
             self.ctx.vlog("{}!".format(e))
+
         return q
 
     def delete(self):
@@ -314,7 +326,7 @@ class HoruzES:
                     else:
                         mapping.append(p)
         except Exception as e:
-            self.ctx.log("Mapping connection failed! {}". format(e))
+            self.ctx.log("Mapping connection failed! {}".format(e))
         return mapping
 
     def is_connected(self):
