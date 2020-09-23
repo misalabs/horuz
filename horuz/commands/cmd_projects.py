@@ -13,11 +13,11 @@ def cli():
     pass
 
 
-@cli.command("delete")
+@cli.command("rm")
 @click.option("-v", "--verbose", is_flag=True, help="Enables verbose mode.")
 @click.option('-p', '--project', required=True, help='Specify the project to delete.')
 @pass_environment
-def projects_delete(ctx, verbose, project):
+def projects_rm(ctx, verbose, project):
     """
     Delete ElasticSeach Project
     """
