@@ -5,7 +5,7 @@ import click
 from elasticsearch import Elasticsearch, RequestsHttpConnection
 from elasticsearch.exceptions import RequestError, ConnectionError, ConnectionTimeout
 
-from horuz.utils.generators import get_random_name
+from horuz.utils.generators import get_random_name, get_duplications
 
 
 class ElasticSearchAPI:
@@ -27,7 +27,7 @@ class ElasticSearchAPI:
             self.es = Elasticsearch(
                 address, connection_class=RequestsHttpConnection)
         except (ConnectionError, ConnectionTimeout):
-            self.ctx.log("Error init connection ES") 
+            self.ctx.log("Error init connection ES")
         except Exception as e:
             self.ctx.log("Error init ES {}".format(e))
             self.es = None
@@ -53,7 +53,7 @@ class ElasticSearchAPI:
         except (ConnectionError, ConnectionTimeout):
             self.ctx.log("Create index connection error")
         except Exception as e:
-            self.ctx.log("Create index error {}".format(e))      
+            self.ctx.log("Create index error {}".format(e))
         finally:
             return created
 
@@ -96,10 +96,9 @@ class ElasticSearchAPI:
         self.create_index(index)
         saved = False
         try:
-            self.es.index(index=index, body=record)
-            saved = True
+            saved = self.es.index(index=index, body=record)
         except (ConnectionError, ConnectionTimeout):
-            self.ctx.log("Save index connection error")  
+            self.ctx.log("Save index connection error")
         except Exception as e:
             self.ctx.log("Save index error {}".format(e))
         finally:
@@ -178,8 +177,8 @@ class HoruzES:
         self.es = ElasticSearchAPI(ctx.config.get("elasticsearch_address"), ctx)
         self.domain = domain
         self.ctx = ctx
-            
-    def save_ffuf_data(self, data, session):
+
+    def save_ffuf_data(self, data, session, filter_dups=None):
         """
         Save ffuf data to ES
         Parameters
@@ -188,6 +187,8 @@ class HoruzES:
             Json data
         session : String
             Session name
+        filter_dups: String
+            field name which is going to be filtered
         """
         session = session if session else get_random_name()
         config_url = data["config"]["url"].replace("FUZZ", "")
@@ -198,11 +199,12 @@ class HoruzES:
                 host: "*{}" AND time: {} AND type: ffuf
             '''.format(
                 config_url.replace("/", '').replace("http:", ''),
-               data["time"]))
+                data["time"]))
         if record_exists and record_exists['hits']['hits']:
             self.ctx.vlog("Record {} {} exists: ", config_url, data["time"], record_exists)
             return
         # Save the new data
+        all_es_data = []
         es_data = {
             "host": config_url,
             "time": data.get("time"),
@@ -226,9 +228,35 @@ class HoruzES:
                         except FileNotFoundError:
                             self.ctx.vlog("Could not open file")
                     self.ctx.vlog(es_data)
-                    # Saving to ES
-                    self.es.save_in_index(self.domain, es_data)
-
+                    if filter_dups:
+                        all_es_data.append(es_data["result"])
+                    else:
+                        self.es.save_in_index(self.domain, es_data)
+            if filter_dups:
+                all_es_data = get_duplications(all_es_data, filter_dups)
+                with click.progressbar(all_es_data, label='Filtering data for session: {}'.format(session)) as results:
+                    data_dup = {
+                        "host": config_url,
+                        "time": data.get("time"),
+                        "session": session,
+                        "type": "ffuf",
+                        "cmd": data.get("commandline"),
+                        "result": []
+                    }
+                    for result in results:
+                        # Remove duplicates before to save in ES
+                        dups = {}
+                        if "dups" in result:
+                            dups = result["dups"]
+                            del result["dups"]
+                        # Saving to ES
+                        object_es = self.es.save_in_index(self.domain, es_data)
+                        data_dup["{}_duplicate_reference_id".format(
+                            filter_dups.replace(".", "_"))] = object_es["_id"]
+                        # Save the reference of the duplicates
+                        for dup in dups:
+                            data_dup["result"] = dup
+                            self.es.save_in_index(self.domain, data_dup)
         else:
             self.ctx.vlog(es_data)
             self.es.save_in_index(self.domain, es_data)
@@ -237,25 +265,58 @@ class HoruzES:
         self.ctx.log("Results: {}".format(len_results))
         return
 
-    def save_general_data(self, data, session):
+    def save_general_data(self, data, session, filter_dups=None):
         """
         Save General JSON data
+        Parameters
+        ----------
+        data : Dict
+            Json data
+        session : String
+            Session name
+        filter_dups: String
+            field name which is going to be filtered
         """
         session = session if session else get_random_name()
+        # Filter the duplicate data that is in the JSON
+        if filter_dups:
+            data = get_duplications(data, filter_dups)
         with click.progressbar(data, label='Collecting data for session: {}'.format(session)) as results:
-            for d in results:
-                d.update({
+            for result in results:
+                # Adding time and session
+                result.update({
                     "time": datetime.datetime.now(),
                     "session": session})
-                self.ctx.vlog(d)
-                self.es.save_in_index(self.domain, d)
+                # Remove duplicates before to save in ES
+                dups = {}
+                if "dups" in result:
+                    dups = result["dups"]
+                    del result["dups"]
+                self.ctx.vlog(result)
+                object_es = self.es.save_in_index(self.domain, result)
+                # Save the reference of the duplicates
+                for dup in dups:
+                    dup.update({
+                        "time": datetime.datetime.now(),
+                        "session": session,
+                        "{}_duplicate_reference_id".format(
+                            filter_dups.replace(".", "_")): object_es["_id"]})
+                    self.es.save_in_index(self.domain, dup)
         self.ctx.log("\nProject name: {}".format(self.domain))
-        self.ctx.log("\nSession name: {}".format(session))
+        self.ctx.log("Session name: {}".format(session))
         self.ctx.log("Results: {}".format(len(data)))
 
-    def save_json(self, files, session):
+    def save_json(self, files, session, filter_dups=None):
         """
         Save JSON Data to ES.
+        Parameters
+        ----------
+        files : List
+            List of files
+        session : String
+            Session's name
+        filter_dups : String
+            Filter duplicates by X field
         """
         if self.es.connected() is False:
             self.ctx.log("ElasticSearch connection error")
@@ -269,10 +330,11 @@ class HoruzES:
                 except json.decoder.JSONDecodeError:
                     self.ctx.vlog("Error decoding the JSON Data")
                     continue
+                # Put the data in ES
                 if "ffuf" in str(data):
-                    self.save_ffuf_data(data, session)
+                    self.save_ffuf_data(data, session, filter_dups)
                 else:
-                    self.save_general_data(data, session)
+                    self.save_general_data(data, session, filter_dups)
         return
 
     def query(self, term, size=100, raw=False, fields=[]):

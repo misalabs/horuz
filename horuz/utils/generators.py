@@ -1,6 +1,8 @@
 import random
 import time
 
+import dpath.util
+
 
 def get_random_name():
     """
@@ -363,3 +365,33 @@ def get_random_name():
         random.choice(right),
         "{}".format(time.time()).split(".")[1])
     return name
+
+
+def get_duplications(data, filter_dups):
+    """
+    Find the duplications and put them in the same JSON dict in the dups key.
+    data : JSON data
+        The data.
+    """
+    new_data = []
+    filter_dups = filter_dups.replace(".", "/")
+    for idx, d in enumerate(data):
+        # Iterate each result with all the data
+        new_dict = dict(d)
+        new_dict["dups"] = []
+        try:
+            f1 = str(dpath.util.get(d, filter_dups))
+        except KeyError:
+            continue
+        for d2 in data[idx + 1:]:
+            try:
+                f2 = str(dpath.util.get(d2, filter_dups))
+            except KeyError:
+                continue
+            if f1 == f2:
+                dup_dict = dict(d2)
+                dpath.util.delete(dup_dict, filter_dups)
+                new_dict["dups"].append(dup_dict)
+                data.remove(d2)
+        new_data.append(new_dict)
+    return new_data

@@ -26,8 +26,7 @@ def beautify_query(query, fields=[], output="oj"):
             for hit in query['hits']['hits']:
                 source = hit["_source"]
                 d = source
-                if "_id" in fields:
-                    d["_id"] = hit["_id"]
+                d["_id"] = hit["_id"]
                 data.append(d)
     except Exception as e:
         raise ValueError("""
