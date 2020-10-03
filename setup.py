@@ -9,9 +9,9 @@ setup(
         'click',
         'yaspin',
         'elasticsearch==7.5.1',
-        'chalice==1.14.1',
         'tabulate==0.8.7',
         'requests==2.23.0',
+        'dpath==2.0.1',
     ],
     entry_points='''
         [console_scripts]
