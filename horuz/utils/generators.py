@@ -389,9 +389,7 @@ def get_duplications(data, filter_dups):
             except KeyError:
                 continue
             if f1 == f2:
-                dup_dict = dict(d2)
-                dpath.util.delete(dup_dict, filter_dups)
-                new_dict["dups"].append(dup_dict)
+                new_dict["dups"].append({"url": d2["url"]})
                 data.remove(d2)
         new_data.append(new_dict)
     return new_data

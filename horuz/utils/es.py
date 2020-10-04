@@ -4,6 +4,7 @@ import json
 import click
 from elasticsearch import Elasticsearch, RequestsHttpConnection
 from elasticsearch.exceptions import RequestError, ConnectionError, ConnectionTimeout
+from yaspin import yaspin
 
 from horuz.utils.generators import get_random_name, get_duplications
 
@@ -233,8 +234,10 @@ class HoruzES:
                     else:
                         self.es.save_in_index(self.domain, es_data)
             if filter_dups:
-                all_es_data = get_duplications(all_es_data, filter_dups)
-                with click.progressbar(all_es_data, label='Filtering data for session: {}'.format(session)) as results:
+                with yaspin(text="Searching duplicates...", color="magenta") as sp:
+                    all_es_data = get_duplications(all_es_data, filter_dups)
+                    sp.ok("✔")
+                with click.progressbar(all_es_data, label='Collecting data for session: {}'.format(session)) as results:
                     data_dup = {
                         "host": config_url,
                         "time": data.get("time"),
@@ -251,8 +254,7 @@ class HoruzES:
                             del result["dups"]
                         # Saving to ES
                         object_es = self.es.save_in_index(self.domain, es_data)
-                        data_dup["{}_duplicate_reference_id".format(
-                            filter_dups.replace(".", "_"))] = object_es["_id"]
+                        data_dup["duplicate_reference_id"] = object_es["_id"]
                         # Save the reference of the duplicates
                         for dup in dups:
                             data_dup["result"] = dup
@@ -261,7 +263,7 @@ class HoruzES:
             self.ctx.vlog(es_data)
             self.es.save_in_index(self.domain, es_data)
         self.ctx.log("\nProject name: {}".format(self.domain))
-        self.ctx.log("\nSession name: {}".format(session))
+        self.ctx.log("Session name: {}".format(session))
         self.ctx.log("Results: {}".format(len_results))
         return
 
