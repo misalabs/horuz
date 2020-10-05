@@ -256,7 +256,8 @@ class HoruzES:
                             dups = result["dups"]
                             del result["dups"]
                         # Saving to ES
-                        object_es = self.es.save_in_index(self.domain, result)
+                        data_dup["result"] = result
+                        object_es = self.es.save_in_index(self.domain, data_dup)
                         data_dup["duplicate_reference_id"] = object_es["_id"]
                         # Save the reference of the duplicates
                         for dup in dups:
