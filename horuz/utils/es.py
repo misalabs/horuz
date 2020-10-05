@@ -217,7 +217,7 @@ class HoruzES:
         # Save the new data
         len_results = len(data.get("results"))
         if data.get("results"):
-            with click.progressbar(data["results"], label='Collecting data for session: {}'.format(session)) as results:
+            with click.progressbar(data["results"], label='Collecting HTML for session: {}'.format(session)) as results:
                 for result in results:
                     es_data["result"] = result
                     # Get request/response data
@@ -256,7 +256,7 @@ class HoruzES:
                             dups = result["dups"]
                             del result["dups"]
                         # Saving to ES
-                        object_es = self.es.save_in_index(self.domain, es_data)
+                        object_es = self.es.save_in_index(self.domain, result)
                         data_dup["duplicate_reference_id"] = object_es["_id"]
                         # Save the reference of the duplicates
                         for dup in dups:

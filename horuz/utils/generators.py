@@ -381,18 +381,11 @@ def get_duplications(data, filter_dups, remove_filter_dups=None):
         # Iterate each result with all the data
         new_dict = dict(d)
         new_dict["dups"] = []
-        try:
-            f1 = str(dpath.util.get(d, filter_dups))
-        except KeyError:
-            continue
+        f1 = str(dpath.util.get(d, filter_dups))
         for d2 in data[idx + 1:]:
-            try:
-                f2 = str(dpath.util.get(d2, filter_dups))
-            except KeyError:
-                continue
+            f2 = str(dpath.util.get(d2, filter_dups))
             if f1 == f2:
                 dup_dict = dict(d2)
-                # raise ValueError(type(remove_filter_dups))
                 if remove_filter_dups:
                     for remove_filter_dup in remove_filter_dups:
                         dpath.util.delete(dup_dict, remove_filter_dup)
