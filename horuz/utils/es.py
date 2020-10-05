@@ -179,7 +179,7 @@ class HoruzES:
         self.domain = domain
         self.ctx = ctx
 
-    def save_ffuf_data(self, data, session, filter_dups=None):
+    def save_ffuf_data(self, data, session, filter_dups=None, remove_filter_dups=None):
         """
         Save ffuf data to ES
         Parameters
@@ -235,7 +235,10 @@ class HoruzES:
                         self.es.save_in_index(self.domain, es_data)
             if filter_dups:
                 with yaspin(text="Searching duplicates...", color="magenta") as sp:
-                    all_es_data = get_duplications(all_es_data, filter_dups)
+                    all_es_data = get_duplications(
+                        all_es_data,
+                        filter_dups,
+                        remove_filter_dups)
                     sp.ok("✔")
                 with click.progressbar(all_es_data, label='Collecting data for session: {}'.format(session)) as results:
                     data_dup = {
@@ -267,7 +270,7 @@ class HoruzES:
         self.ctx.log("Results: {}".format(len_results))
         return
 
-    def save_general_data(self, data, session, filter_dups=None):
+    def save_general_data(self, data, session, filter_dups=None, remove_filter_dups=None):
         """
         Save General JSON data
         Parameters
@@ -282,7 +285,10 @@ class HoruzES:
         session = session if session else get_random_name()
         # Filter the duplicate data that is in the JSON
         if filter_dups:
-            data = get_duplications(data, filter_dups)
+            data = get_duplications(
+                data,
+                filter_dups,
+                remove_filter_dups)
         with click.progressbar(data, label='Collecting data for session: {}'.format(session)) as results:
             for result in results:
                 # Adding time and session
@@ -308,7 +314,7 @@ class HoruzES:
         self.ctx.log("Session name: {}".format(session))
         self.ctx.log("Results: {}".format(len(data)))
 
-    def save_json(self, files, session, filter_dups=None):
+    def save_json(self, files, session, filter_dups=None, remove_filter_dups=None):
         """
         Save JSON Data to ES.
         Parameters
@@ -334,9 +340,11 @@ class HoruzES:
                     continue
                 # Put the data in ES
                 if "ffuf" in str(data):
-                    self.save_ffuf_data(data, session, filter_dups)
+                    self.save_ffuf_data(
+                        data, session, filter_dups, remove_filter_dups)
                 else:
-                    self.save_general_data(data, session, filter_dups)
+                    self.save_general_data(
+                        data, session, filter_dups, remove_filter_dups)
         return
 
     def query(self, term, size=100, raw=False, fields=[]):

@@ -19,8 +19,9 @@ from horuz.utils.generators import get_random_name
 @click.option('-c', '--cmd', required=False, help='Generate data from external command')
 @click.option('-f', '--filename', required=False, type=click.File('r'), help="JSON file")
 @click.option('-fd', '--filter-dups', required=False, help="Filter by duplicates. Put the field that is constantly repeated. You will not keep repeated things.")
+@click.option('-rfd', '--remove-filter-dups', required=False, help="Remove the duplicated fields. Save only the data you need. Only available if -fd is specified.")
 @pass_environment
-def cli(ctx, verbose, project, session, cmd, filename, filter_dups):
+def cli(ctx, verbose, project, session, cmd, filename, filter_dups, remove_filter_dups):
     """
     Collect Data from external sources
     """
@@ -46,7 +47,10 @@ def cli(ctx, verbose, project, session, cmd, filename, filter_dups):
                 ctx.vlog("Uploading info to ElasticSeach.")
                 hes = HoruzES(project, ctx)
                 hes.save_json(
-                    files=ffuf_files, session=session, filter_dups=filter_dups)
+                    files=ffuf_files,
+                    session=session,
+                    filter_dups=filter_dups,
+                    remove_filter_dups=remove_filter_dups)
             else:
                 sp.fail("💥 FAIL")
             # Deleting remainign files
@@ -55,4 +59,7 @@ def cli(ctx, verbose, project, session, cmd, filename, filter_dups):
         hes = HoruzES(project, ctx)
         ctx.vlog("Uploading file info to ElasticSeach.")
         hes.save_json(
-            files=[filename.name], session=session, filter_dups=filter_dups)
+            files=[filename.name],
+            session=session,
+            filter_dups=filter_dups,
+            remove_filter_dups=remove_filter_dups)

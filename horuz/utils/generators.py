@@ -367,7 +367,7 @@ def get_random_name():
     return name
 
 
-def get_duplications(data, filter_dups):
+def get_duplications(data, filter_dups, remove_filter_dups=None):
     """
     Find the duplications and put them in the same JSON dict in the dups key.
     data : JSON data
@@ -375,6 +375,8 @@ def get_duplications(data, filter_dups):
     """
     new_data = []
     filter_dups = filter_dups.replace(".", "/")
+    if remove_filter_dups:
+        remove_filter_dups = remove_filter_dups.replace(".", "/").split(",")
     for idx, d in enumerate(data):
         # Iterate each result with all the data
         new_dict = dict(d)
@@ -389,7 +391,12 @@ def get_duplications(data, filter_dups):
             except KeyError:
                 continue
             if f1 == f2:
-                new_dict["dups"].append({"url": d2["url"]})
+                dup_dict = dict(d2)
+                # raise ValueError(type(remove_filter_dups))
+                if remove_filter_dups:
+                    for remove_filter_dup in remove_filter_dups:
+                        dpath.util.delete(dup_dict, remove_filter_dup)
+                new_dict["dups"].append(dup_dict)
                 data.remove(d2)
         new_data.append(new_dict)
     return new_data
