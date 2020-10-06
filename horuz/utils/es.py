@@ -263,12 +263,13 @@ class HoruzES:
                             for dup in dups:
                                 data_dup["result"] = dup
                                 self.es.save_in_index(self.domain, data_dup)
+                            del data_dup["duplicate_reference_id"]
                         else:
                             # Saving to ES
                             data_dup["result"] = result
                             object_es = self.es.save_in_index(self.domain, data_dup)
                         data_dup["result"] = []
-                        del data_dup["duplicate_reference_id"]
+
         else:
             self.ctx.vlog(es_data)
             self.es.save_in_index(self.domain, es_data)
