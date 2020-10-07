@@ -18,8 +18,8 @@ from horuz.utils.generators import get_random_name
 @click.option('-s', '--session', required=False, help="Custom session name", autocompletion=get_sessions)
 @click.option('-c', '--cmd', required=False, help='Generate data from external command')
 @click.option('-f', '--filename', required=False, type=click.File('r'), help="JSON file")
-@click.option('-fd', '--filter-dups', required=False, help="Filter by duplicates. Put the field that is constantly repeated. You will not keep repeated things.")
-@click.option('-rfd', '--remove-filter-dups', required=False, help="Remove the duplicated fields. Save only the data you need. Only available if -fd is specified.")
+@click.option('-fd', '--filter-dups', required=False, help="Filter by duplicates. Put the fields separated with commas that are constantly repeated, you will not keep repeated data.")
+@click.option('-rfd', '--remove-filter-dups', required=False, help="Remove the duplicated fields, save only the data you need. Only available if -fd is specified. Example -rfd html,resultfile")
 @pass_environment
 def cli(ctx, verbose, project, session, cmd, filename, filter_dups, remove_filter_dups):
     """

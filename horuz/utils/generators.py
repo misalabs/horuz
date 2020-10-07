@@ -372,18 +372,28 @@ def get_duplications(data, filter_dups, remove_filter_dups=None):
     Find the duplications and put them in the same JSON dict in the dups key.
     data : JSON data
         The data.
+    filter_dups : String separated with commas
+        The fields the user wants to filter/eliminate duplicates
+    remove_filter_dups : String separated with commas
+        The fileds the user does not want to add in the ends array.
     """
     new_data = []
-    filter_dups = filter_dups.replace(".", "/")
+    filter_dups = tuple(filter_dups.replace(".", "/").split(","))
     if remove_filter_dups:
         remove_filter_dups = remove_filter_dups.replace(".", "/").split(",")
     for idx, d in enumerate(data):
         # Iterate each result with all the data
         new_dict = dict(d)
         new_dict["dups"] = []
-        f1 = str(dpath.util.get(d, filter_dups))
+        # Generate a long string of multiple fields
+        f1 = ""
+        for filter_dup in filter_dups:
+            f1 += "{}".format(str(dpath.util.get(d, filter_dup)))
         for d2 in data[idx + 1:]:
-            f2 = str(dpath.util.get(d2, filter_dups))
+            # Generate a long string of multiple fields
+            f2 = ""
+            for filter_dup in filter_dups:
+                f2 += "{}".format(str(dpath.util.get(d2, filter_dup)))
             if f1 == f2:
                 dup_dict = dict(d2)
                 if remove_filter_dups:
