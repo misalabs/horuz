@@ -1,6 +1,7 @@
 import random
 import time
 
+import click
 import dpath.util
 
 
@@ -381,27 +382,29 @@ def get_duplications(data, filter_dups, remove_filter_dups=None):
     filter_dups = tuple(filter_dups.replace(".", "/").split(","))
     if remove_filter_dups:
         remove_filter_dups = remove_filter_dups.replace(".", "/").split(",")
-    for idx, d in enumerate(data):
-        # Iterate each result with all the data
-        new_dict = dict(d)
-        new_dict["dups"] = []
-        # Generate a long string of multiple fields
-        f1 = ""
-        for filter_dup in filter_dups:
-            f1 += "{}".format(str(dpath.util.get(d, filter_dup)))
-        for d2 in data[idx + 1:]:
+    data_progressbar = data.copy()
+    with click.progressbar(data_progressbar, label="Removing duplicates...") as datas:
+        for idx, d in enumerate(datas):
+            # Iterate each result with all the data
+            new_dict = dict(d)
+            new_dict["dups"] = []
             # Generate a long string of multiple fields
-            f2 = ""
+            f1 = ""
             for filter_dup in filter_dups:
-                f2 += "{}".format(str(dpath.util.get(d2, filter_dup)))
-            if f1 == f2:
-                if remove_filter_dups:
-                    # If the filter is specified, we remove the fields,
-                    # if the filter is not specified, it will no be added in the dict
-                    dup_dict = dict(d2)
-                    for remove_filter_dup in remove_filter_dups:
-                        dpath.util.delete(dup_dict, remove_filter_dup)
-                    new_dict["dups"].append(dup_dict)
-                data.remove(d2)
-        new_data.append(new_dict)
+                f1 += "{}".format(str(dpath.util.get(d, filter_dup)))
+            for d2 in data[idx + 1:]:
+                # Generate a long string of multiple fields
+                f2 = ""
+                for filter_dup in filter_dups:
+                    f2 += "{}".format(str(dpath.util.get(d2, filter_dup)))
+                if f1 == f2:
+                    if remove_filter_dups:
+                        # If the filter is specified, we remove the fields,
+                        # if the filter is not specified, it will no be added in the dict
+                        dup_dict = dict(d2)
+                        for remove_filter_dup in remove_filter_dups:
+                            dpath.util.delete(dup_dict, remove_filter_dup)
+                        new_dict["dups"].append(dup_dict)
+                    data.remove(d2)
+            new_data.append(new_dict)
     return new_data

@@ -234,12 +234,10 @@ class HoruzES:
                     else:
                         self.es.save_in_index(self.domain, es_data)
             if filter_dups:
-                with yaspin(text="Searching duplicates...", color="magenta") as yaspin_duplicates:
-                    all_es_data = get_duplications(
-                        all_es_data,
-                        filter_dups,
-                        remove_filter_dups)
-                    yaspin_duplicates.ok("✔")
+                all_es_data = get_duplications(
+                    data=all_es_data,
+                    filter_dups=filter_dups,
+                    remove_filter_dups=remove_filter_dups)
                 with click.progressbar(all_es_data, label='Collecting data for session: {}'.format(session)) as results:
                     data_dup = {
                         "host": config_url,
@@ -294,9 +292,9 @@ class HoruzES:
         # Filter the duplicate data that is in the JSON
         if filter_dups:
             data = get_duplications(
-                data,
-                filter_dups,
-                remove_filter_dups)
+                data=data,
+                filter_dups=filter_dups,
+                remove_filter_dups=remove_filter_dups)
         with click.progressbar(data, label='Collecting data for session: {}'.format(session)) as results:
             for result in results:
                 # Adding time and session
