@@ -395,11 +395,13 @@ def get_duplications(data, filter_dups, remove_filter_dups=None):
             for filter_dup in filter_dups:
                 f2 += "{}".format(str(dpath.util.get(d2, filter_dup)))
             if f1 == f2:
-                dup_dict = dict(d2)
                 if remove_filter_dups:
+                    # If the filter is specified, we remove the fields,
+                    # if the filter is not specified, it will no be added in the dict
+                    dup_dict = dict(d2)
                     for remove_filter_dup in remove_filter_dups:
                         dpath.util.delete(dup_dict, remove_filter_dup)
-                new_dict["dups"].append(dup_dict)
+                    new_dict["dups"].append(dup_dict)
                 data.remove(d2)
         new_data.append(new_dict)
     return new_data
