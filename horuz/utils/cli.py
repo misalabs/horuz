@@ -35,15 +35,13 @@ def log_session(session):
     try:
         with open(log_path) as f:
             lines = f.readlines()
+            lines = [x.strip() for x in lines if x]
+            if session not in lines:
+                lines.append(session)
+                with open(log_path, 'w') as f:
+                    f.write("\n".join(lines))
     except Exception:
-        os.popen("touch ~/.horuz/sessions.log 2>/dev/null")
-
-    lines = [x.strip() for x in lines if x]
-    if session not in lines:
-        lines.append(session)
-
-        with open(log_path, 'w') as f:
-            f.write("\n".join(lines))
+        os.popen("touch ~/.horuz/sessions.log")
 
 
 def get_sessions(ctx, args, incomplete):
