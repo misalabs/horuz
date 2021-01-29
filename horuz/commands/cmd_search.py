@@ -12,9 +12,10 @@ from horuz.utils.es import HoruzES
 @click.option('-q', '--query', required=True, help='Query to ElasticSeach')
 @click.option('-f', '--fields', help='Specify the fields you want.')
 @click.option('-s', '--size', default=100, type=click.IntRange(1, 10000), help='Specify the output size. Range 1-10000')
+@click.option('-o', '--order', default="time:desc", help='Specify the sorting of the query')
 @click.option('-oJ', is_flag=True, help="JSON Output")
 @pass_environment
-def cli(ctx, verbose, project, query, fields, size, oj):
+def cli(ctx, verbose, project, query, fields, size, order, oj):
     """
     Get data from ElasticSeach.
     """
@@ -24,7 +25,7 @@ def cli(ctx, verbose, project, query, fields, size, oj):
     if oj:
         # JSON Output
         data = beautify_query(
-            hes.query(term=query, size=size, fields=fields),
+            hes.query(term=query, size=size, order=order, fields=fields),
             fields,
             output="json")
         click.echo(data)
@@ -34,7 +35,7 @@ def cli(ctx, verbose, project, query, fields, size, oj):
         if not fields:
             fields = ["_id", "time", "session"]
         data = beautify_query(
-            hes.query(term=query, size=size, fields=fields),
+            hes.query(term=query, size=size, order=order, fields=fields),
             fields,
             output="interactive")
         click.echo_via_pager(tabulate(data, headers="keys"))
