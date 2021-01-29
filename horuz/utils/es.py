@@ -127,7 +127,7 @@ class ElasticSearchAPI:
         except Exception as e:
             self.ctx.vlog("Mapping error {}".format(e))
 
-    def query(self, index, term, size=100, raw=False, fields=[]):
+    def query(self, index, term, size=100, order="time:desc", raw=False, fields=[]):
         """
         Search in Elasticsearch server
         Parameters
@@ -138,6 +138,8 @@ class ElasticSearchAPI:
             Search Query
         size : String
             Size query search
+        order : String
+            Sort by
         fields : List
             A list of fields of the source
         """
@@ -149,7 +151,7 @@ class ElasticSearchAPI:
                     return self.es.search(
                         index=index,
                         q=term,
-                        sort=["time:desc"],
+                        sort=[order],
                         size=size,
                         _source=fields)
                 except (RequestError, ConnectionError, ConnectionTimeout) as e:
@@ -353,14 +355,14 @@ class HoruzES:
                         data, session, filter_dups, remove_filter_dups)
         return
 
-    def query(self, term, size=100, raw=False, fields=[]):
+    def query(self, term, size=100, order="time:desc", raw=False, fields=[]):
         """
         Send Queries to ES
         """
         q = None
         self.ctx.vlog("Sending the query '{}' to ElasticSeach.".format(term))
         try:
-            q = self.es.query(self.domain, term, size, raw, fields)
+            q = self.es.query(self.domain, term, size, order, raw, fields)
         except Exception as e:
             self.ctx.log("Query connection failed: {}!".format(e))
             self.ctx.vlog("{}!".format(e))
